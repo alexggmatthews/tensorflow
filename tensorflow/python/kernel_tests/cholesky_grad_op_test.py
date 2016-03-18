@@ -118,7 +118,7 @@ class CholeskyGradTest(tf.test.TestCase):
     with self.test_session():
       a = tf.constant( raw_a )
       g = tf.constant( raw_g )
-      test = tf.user_ops.cholesky_grad( a, g ).eval()
+      test = tf.python.linalg_ops.cholesky_grad( a, g ).eval()
       temp = chol_rev( raw_a, raw_g ) 
       reference = 0.5*( temp + temp.T )
       self.assertTrue( (np.abs( test - reference) < 1e-4).all().all() )
@@ -131,7 +131,7 @@ class CholeskyGradTest(tf.test.TestCase):
     with self.test_session():
       a = tf.constant( raw_a )
       g = tf.constant( raw_g )
-      test = tf.user_ops.cholesky_grad( a, g ).eval()
+      test = tf.python.linalg_ops.cholesky_grad( a, g ).eval()
       temp = chol_rev( raw_a, raw_g, block_size=32 ) 
       reference = 0.5*( temp + temp.T )
       self.assertAllClose( test, reference  )
