@@ -6,10 +6,9 @@
 #include "tensorflow/core/framework/op.h"
 #include "third_party/eigen3/Eigen/Core"
 
-REGISTER_OP("CholeskyGrad").Input("l: T").Input("l_bar: T").Output("a_bar: T").Attr( "T: {float, double}").Doc("Cholesky backpropagation where l is output of Cholesky algorithm and f is gradient of some loss wrt l");
-
 #include "tensorflow/core/framework/op_kernel.h"
 
+#include "tensorflow/core/kernels/linalg_ops_common.h"
 #include "third_party/eigen3/unsupported/Eigen/CXX11/Tensor"
 #include "tensorflow/core/framework/tensor_types.h"
 #include "tensorflow/core/framework/types.h"
@@ -102,14 +101,5 @@ class CholeskyGrad : public OpKernel {
     
 };
 
-REGISTER_KERNEL_BUILDER(
-    Name("CholeskyGrad")
-    .Device(DEVICE_CPU)
-    .TypeConstraint<float>("T"),
-    CholeskyGrad<float>);
-    
-REGISTER_KERNEL_BUILDER(
-    Name("CholeskyGrad")
-    .Device(DEVICE_CPU)
-    .TypeConstraint<double>("T"),
-    CholeskyGrad<double>);
+REGISTER_LINALG_OP("CholeskyGrad", (CholeskyGrad<float>), float);
+REGISTER_LINALG_OP("CholeskyGrad", (CholeskyGrad<double>), double);

@@ -26,11 +26,3 @@ from tensorflow.python.ops.gen_user_ops import *
 def my_fact():
   """Example of overriding the generated code for an Op."""
   return gen_user_ops._fact()
-
-@ops.RegisterGradient("Cholesky")
-def _cholesky_grad(op, grad):
-  return ( cholesky_grad( op.outputs[0] , grad ) )
-
-@ops.RegisterShape("CholeskyGrad")
-def _cholesky_grad_shape(op):
-  return [op.inputs[0].get_shape()]

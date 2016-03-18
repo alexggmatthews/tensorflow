@@ -117,6 +117,13 @@ input: Shape is `[..., M, M]`.
 output: Shape is `[..., M, M]`.
 )doc");
 
+REGISTER_OP("CholeskyGrad")
+    .Input("l: T")
+    .Input("l_bar: T")
+    .Output("a_bar: T")
+    .Attr( "T: {float, double}")
+    .Doc("Cholesky backpropagation where l is output of Cholesky algorithm and f is gradient of some loss wrt l");
+
 REGISTER_OP("SelfAdjointEig")
     .Input("input: T")
     .Output("output: T")
