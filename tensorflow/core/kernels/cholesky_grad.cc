@@ -69,22 +69,42 @@ class CholeskyGrad : public OpKernel {
     MatrixMap output_matrix(output_tensor->template flat<T>().data(), input_tensor_l.dim_size(0), input_tensor_l.dim_size(1) );    
 
     const int64 N = input_matrix_l.rows();
-    const int64 NB = 32;
+    const int64 kMaxBlockSize = 32;
 
     output_matrix = input_matrix_l_bar.template triangularView<Eigen::Lower>();
 
     
-    for ( int64 Ji = (N-NB+1) ; Ji>(1-NB); Ji-= NB )   
+    for ( int64 block_end = N ; block_end>0ll; block_end-= kMaxBlockSize )   
     {
-        int64 J = std::max<int64>(1, Ji);
-        int64 JB = NB - (J - Ji);
+        const int64 block_begin = std::max(0ll, block_end - kMaxBlockSize);
+        const int64 block_size = block_end - block_begin;
+        const int64 trailing_size = N - block_size ; 
     
-        output_matrix.block( J+JB-1, J-1, N - (J+JB-1), JB) = input_matrix_l.block( J-1, J-1, JB, JB ).adjoint().template triangularView<Eigen::Upper>().solve( output_matrix.block( J+JB-1, J-1, N - (J+JB-1), JB ).adjoint() ).adjoint();
-        output_matrix.block( J-1, J-1, JB, JB ) -= (output_matrix.block( J+JB-1, J-1, N - (J+JB-1), JB).adjoint() * input_matrix_l.block( J+JB-1, J-1, N - (J+JB-1), JB ) ).template triangularView<Eigen::Lower>();
-        output_matrix.block( (J+JB-1), 0, N - (J+JB-1), J-1 )  -=  output_matrix.block( (J+JB-1), J-1, N - (J+JB-1), JB ) * input_matrix_l.block( J-1, 0, JB, J-1 );
-        output_matrix.block( J-1, 0, JB, J-1) -= output_matrix.block( (J+JB-1), J-1, N - (J+JB-1), JB ).adjoint() * input_matrix_l.block( (J+JB-1), 0, N - (J+JB-1), J-1 ) ;
-        chol_rev_unblocked( input_matrix_l.block( J-1, J-1, JB, JB ),  output_matrix.block( J-1, J-1, JB, JB ) );
-        output_matrix.block( J-1, 0, JB, J-1 ) -= (output_matrix.block( J-1, J-1, JB, JB ) + output_matrix.block( J-1, J-1, JB, JB ).adjoint() )* input_matrix_l.block( J-1, 0, JB, J-1 );
+        output_matrix.block( block_end, block_begin, trailing_size , block_size) = input_matrix_l.block( block_begin, block_begin, block_size, block_size )
+                                                                                                 .adjoint()
+                                                                                                 .template triangularView<Eigen::Upper>()
+                                                                                                 .solve( output_matrix.block( block_end, block_begin, trailing_size, block_size )
+                                                                                                 .adjoint() )
+                                                                                                 .adjoint();
+
+        output_matrix.block( block_begin, block_begin, block_size, block_size ) -= (output_matrix.block( block_end, block_begin, trailing_size, block_size)
+                                                                                                 .adjoint() 
+                                                                                                 * input_matrix_l.block( block_end, block_begin, trailing_size, block_size ) )
+                                                                                                 .template triangularView<Eigen::Lower>();
+        output_matrix.block( block_end, 0, trailing_size, block_begin )  -=  output_matrix.block( (block_end), block_begin, trailing_size, block_size ) 
+                                                                                          * input_matrix_l
+                                                                                          .block( block_begin, 0, block_size, block_begin );                                                                                          
+
+        output_matrix.block( block_begin, 0, block_size, block_begin) -= output_matrix.block( block_end, block_begin, trailing_size, block_size )
+                                                                                      .adjoint() 
+                                                                                      * input_matrix_l.block( block_end, 0, trailing_size, block_begin ) ;
+        chol_rev_unblocked( input_matrix_l.block( block_begin, block_begin, block_size, block_size ),  output_matrix
+                                          .block( block_begin, block_begin, block_size, block_size ) );
+        output_matrix.block( block_begin, 0, block_size, block_begin ) -= (output_matrix.block( block_begin, block_begin, block_size, block_size ) 
+                                                                                        +output_matrix.block( block_begin, block_begin, block_size, block_size )
+                                                                                        .adjoint() )
+                                                                                        * input_matrix_l
+                                                                                        .block( block_begin, 0, block_size, block_begin );
     }
     
         
