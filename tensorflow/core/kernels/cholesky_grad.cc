@@ -68,17 +68,17 @@ class CholeskyGrad : public OpKernel {
     const ConstMatrixMap input_matrix_grad(input_tensor_grad.flat<T>().data(), input_tensor_grad.dim_size(0), input_tensor_grad.dim_size(1));
     MatrixMap output_matrix(output_tensor->template flat<T>().data(), input_tensor_l.dim_size(0), input_tensor_l.dim_size(1) );    
 
-    const int64 N = input_matrix_l.rows();
+    const int64 kMatrixSize = input_matrix_l.rows();
     const int64 kMaxBlockSize = 32;
 
     output_matrix = input_matrix_grad.template triangularView<Eigen::Lower>();
 
     
-    for ( int64 block_end = N ; block_end>0ll; block_end-= kMaxBlockSize )   
+    for ( int64 block_end = kMatrixSize ; block_end>0ll; block_end-= kMaxBlockSize )   
     {
         const int64 block_begin = std::max(0ll, block_end - kMaxBlockSize);
         const int64 block_size = block_end - block_begin;
-        const int64 trailing_size = N - block_size ; 
+        const int64 trailing_size = kMatrixSize - block_size ; 
     
         output_matrix.block( block_end, block_begin, trailing_size , block_size) = input_matrix_l.block( block_begin, block_begin, block_size, block_size )
                                                                                                  .adjoint()
@@ -113,14 +113,14 @@ class CholeskyGrad : public OpKernel {
     
     void chol_rev_unblocked(const ConstRef l_block, Ref grad_block)
     {
-        const int64 N = l_block.rows();
+        const int64 kMatrixSize = l_block.rows();
         
-        for ( int64 k = N-1; k>=0; k--)
+        for ( int64 k = kMatrixSize-1; k>=0; k--)
         {
-            grad_block(k,k) -= (l_block.block( k+1,k , N-(k+1), 1 ).adjoint() * grad_block.block( k+1,k , N-(k+1), 1 ) )(0,0) / l_block(k,k);
-            grad_block.block(k,k,N-k,1) /= l_block( k,k) ;
-            grad_block.block(k,0,1,k) -=grad_block.block(k,k,N-k,1).adjoint() * l_block.block(k,0,N-k,k);
-            grad_block.block(k+1,0,N-(k+1),k) -= grad_block.block(k+1, k , N-(k+1), 1 ) * l_block.block( k, 0, 1, k ) ; 
+            grad_block(k,k) -= (l_block.block( k+1,k , kMatrixSize-(k+1), 1 ).adjoint() * grad_block.block( k+1,k , kMatrixSize-(k+1), 1 ) )(0,0) / l_block(k,k);
+            grad_block.block(k,k,kMatrixSize-k,1) /= l_block( k,k) ;
+            grad_block.block(k,0,1,k) -=grad_block.block(k,k,kMatrixSize-k,1).adjoint() * l_block.block(k,0,kMatrixSize-k,k);
+            grad_block.block(k+1,0,kMatrixSize-(k+1),k) -= grad_block.block(k+1, k , kMatrixSize-(k+1), 1 ) * l_block.block( k, 0, 1, k ) ; 
             grad_block(k,k) *= 0.5;
         }
     }
