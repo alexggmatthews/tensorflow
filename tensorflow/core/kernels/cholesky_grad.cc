@@ -23,7 +23,7 @@ limitations under the License.
 #include "tensorflow/core/framework/tensor_types.h"
 #include "tensorflow/core/framework/types.h"
 
-using namespace tensorflow;
+namespace tensorflow {
 
 template <typename T>
 class CholeskyGrad : public OpKernel {
@@ -129,3 +129,4 @@ class CholeskyGrad : public OpKernel {
 
 REGISTER_LINALG_OP("CholeskyGrad", (CholeskyGrad<float>), float);
 REGISTER_LINALG_OP("CholeskyGrad", (CholeskyGrad<double>), double);
+}  // namespace tensorflow
