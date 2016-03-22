@@ -98,7 +98,7 @@ class CholeskyGrad : public OpKernel {
         output_matrix.block( block_begin, 0, block_size, block_begin) -= output_matrix.block( block_end, block_begin, trailing_size, block_size )
                                                                                       .adjoint() 
                                                                                       * input_matrix_l.block( block_end, 0, trailing_size, block_begin ) ;
-        chol_rev_unblocked( input_matrix_l.block( block_begin, block_begin, block_size, block_size ),  output_matrix
+        CholeskyGradUnblocked( input_matrix_l.block( block_begin, block_begin, block_size, block_size ),  output_matrix
                                           .block( block_begin, block_begin, block_size, block_size ) );
         output_matrix.block( block_begin, 0, block_size, block_begin ) -= (output_matrix.block( block_begin, block_begin, block_size, block_size ) 
                                                                                         +output_matrix.block( block_begin, block_begin, block_size, block_size )
@@ -111,7 +111,7 @@ class CholeskyGrad : public OpKernel {
 
     }
     
-    void chol_rev_unblocked(const ConstRef l_block, Ref grad_block)
+    void CholeskyGradUnblocked(const ConstRef l_block, Ref grad_block)
     {
         const int64 kMatrixSize = l_block.rows();
         
