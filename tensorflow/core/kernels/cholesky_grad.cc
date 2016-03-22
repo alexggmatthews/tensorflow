@@ -80,31 +80,31 @@ class CholeskyGrad : public OpKernel {
         const int64 block_size = block_end - block_begin;
         const int64 trailing_size = kMatrixSize - block_size ; 
     
-        output_matrix.block( block_end, block_begin, trailing_size , block_size) = input_matrix_l.block( block_begin, block_begin, block_size, block_size )
+        output_matrix.block(block_end, block_begin, trailing_size , block_size) = input_matrix_l.block(block_begin, block_begin, block_size, block_size)
                                                                                                  .adjoint()
                                                                                                  .template triangularView<Eigen::Upper>()
-                                                                                                 .solve( output_matrix.block( block_end, block_begin, trailing_size, block_size )
+                                                                                                 .solve(output_matrix.block(block_end, block_begin, trailing_size, block_size)
                                                                                                  .adjoint() )
                                                                                                  .adjoint();
 
-        output_matrix.block( block_begin, block_begin, block_size, block_size ) -= (output_matrix.block( block_end, block_begin, trailing_size, block_size)
+        output_matrix.block(block_begin, block_begin, block_size, block_size) -= (output_matrix.block(block_end, block_begin, trailing_size, block_size)
                                                                                                  .adjoint() 
-                                                                                                 * input_matrix_l.block( block_end, block_begin, trailing_size, block_size ) )
+                                                                                                 * input_matrix_l.block(block_end, block_begin, trailing_size, block_size))
                                                                                                  .template triangularView<Eigen::Lower>();
-        output_matrix.block( block_end, 0, trailing_size, block_begin )  -=  output_matrix.block( (block_end), block_begin, trailing_size, block_size ) 
+        output_matrix.block(block_end, 0, trailing_size, block_begin)  -=  output_matrix.block(block_end, block_begin, trailing_size, block_size) 
                                                                                           * input_matrix_l
-                                                                                          .block( block_begin, 0, block_size, block_begin );                                                                                          
+                                                                                          .block(block_begin, 0, block_size, block_begin); 
 
-        output_matrix.block( block_begin, 0, block_size, block_begin) -= output_matrix.block( block_end, block_begin, trailing_size, block_size )
+        output_matrix.block(block_begin, 0, block_size, block_begin) -= output_matrix.block(block_end, block_begin, trailing_size, block_size)
                                                                                       .adjoint() 
-                                                                                      * input_matrix_l.block( block_end, 0, trailing_size, block_begin ) ;
-        CholeskyGradUnblocked( input_matrix_l.block( block_begin, block_begin, block_size, block_size ),  output_matrix
-                                          .block( block_begin, block_begin, block_size, block_size ) );
-        output_matrix.block( block_begin, 0, block_size, block_begin ) -= (output_matrix.block( block_begin, block_begin, block_size, block_size ) 
-                                                                                        +output_matrix.block( block_begin, block_begin, block_size, block_size )
+                                                                                      * input_matrix_l.block(block_end, 0, trailing_size, block_begin);
+        CholeskyGradUnblocked(input_matrix_l.block(block_begin, block_begin, block_size, block_size), output_matrix
+                                          .block( block_begin, block_begin, block_size, block_size));
+        output_matrix.block(block_begin, 0, block_size, block_begin) -= (output_matrix.block(block_begin, block_begin, block_size, block_size) 
+                                                                                        +output_matrix.block(block_begin, block_begin, block_size, block_size)
                                                                                         .adjoint() )
                                                                                         * input_matrix_l
-                                                                                        .block( block_begin, 0, block_size, block_begin );
+                                                                                        .block(block_begin, 0, block_size, block_begin);
     }
     
     output_matrix = (0.5 * ( output_matrix +  output_matrix.transpose() )).eval();
@@ -117,10 +117,10 @@ class CholeskyGrad : public OpKernel {
         
         for ( int64 k = kMatrixSize-1; k>=0; k--)
         {
-            grad_block(k,k) -= (l_block.block( k+1,k , kMatrixSize-(k+1), 1 ).adjoint() * grad_block.block( k+1,k , kMatrixSize-(k+1), 1 ) )(0,0) / l_block(k,k);
+            grad_block(k,k) -= (l_block.block(k+1,k , kMatrixSize-(k+1), 1).adjoint() * grad_block.block(k+1,k , kMatrixSize-(k+1), 1))(0,0) / l_block(k,k);
             grad_block.block(k,k,kMatrixSize-k,1) /= l_block( k,k) ;
             grad_block.block(k,0,1,k) -=grad_block.block(k,k,kMatrixSize-k,1).adjoint() * l_block.block(k,0,kMatrixSize-k,k);
-            grad_block.block(k+1,0,kMatrixSize-(k+1),k) -= grad_block.block(k+1, k , kMatrixSize-(k+1), 1 ) * l_block.block( k, 0, 1, k ) ; 
+            grad_block.block(k+1,0,kMatrixSize-(k+1),k) -= grad_block.block(k+1, k , kMatrixSize-(k+1), 1) * l_block.block(k, 0, 1, k) ; 
             grad_block(k,k) *= 0.5;
         }
     }
