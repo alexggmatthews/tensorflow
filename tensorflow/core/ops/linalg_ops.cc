@@ -119,10 +119,16 @@ output: Shape is `[..., M, M]`.
 
 REGISTER_OP("CholeskyGrad")
     .Input("l: T")
-    .Input("l_bar: T")
-    .Output("a_bar: T")
+    .Input("grad: T")
+    .Output("output: T")
     .Attr( "T: {float, double}")
-    .Doc("Cholesky backpropagation where l is output of Cholesky algorithm and f is gradient of some loss wrt l");
+    .Doc(R"doc(
+Calculates the reverse mode backpropagated gradient of the Cholesky algorithm.
+
+l: Output of Cholesky algorithm l = chol(A). Shape is `[M, M]`. Algorithm depends only on lower triangular part of this matrix.
+grad: df/dl where f is some scalar function. Shape is `[M, M]'. Algorithm depends only on lower triangular part of this matrix.
+output: Symmetrized version of df/dA . Shape is `[M, M]'
+)doc");
 
 REGISTER_OP("SelfAdjointEig")
     .Input("input: T")
