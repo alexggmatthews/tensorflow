@@ -67,8 +67,8 @@ class CholeskyGrad : public OpKernel {
       // the output shape is a 0-element matrix, so there is nothing to do.
       return;
     }
-    // The next three lines are necessary to get Eigen matrix behaviour.
-    const ConstMatrixMap input_matrix_l(input_tensor_l.flat<T>().data(),
+    // The next lines are necessary to get Eigen matrix behaviour.
+    const ConstMatrixMap input_matrix_l_full(input_tensor_l.flat<T>().data(),
                                         input_tensor_l.dim_size(0),
                                         input_tensor_l.dim_size(1));
     const ConstMatrixMap input_matrix_grad(input_tensor_grad.flat<T>().data(),
@@ -78,10 +78,15 @@ class CholeskyGrad : public OpKernel {
                             input_tensor_l.dim_size(0),
                             input_tensor_l.dim_size(1) );
 
+    // Algorithm only depends on lower triangular half on input_tensor_l.
+    const Matrix input_matrix_l = input_matrix_l_full
+                                  .template triangularView<Eigen::Lower>();
+    // Algorithm only depends on lower triangular half on input_matrix_grad.
+    output_matrix = input_matrix_grad.template triangularView<Eigen::Lower>();
+
     const int64 kMatrixSize = input_matrix_l.rows();
     const int64 kMaxBlockSize = 32;
 
-    output_matrix = input_matrix_grad.template triangularView<Eigen::Lower>();
     for (int64 block_end = kMatrixSize;
                block_end > 0;
                block_end -= kMaxBlockSize) {
