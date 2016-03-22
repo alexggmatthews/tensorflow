@@ -107,9 +107,6 @@ class CholeskyGrad : public OpKernel {
                                                                                         .block( block_begin, 0, block_size, block_begin );
     }
     
-        
-    //TODO: what to do if input_matrix_l isn't lower triangular?
-    
     output_matrix = (0.5 * ( output_matrix +  output_matrix.transpose() )).eval();
 
     }
