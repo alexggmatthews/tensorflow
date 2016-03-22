@@ -39,33 +39,49 @@ class CholeskyGrad : public OpKernel {
     const Tensor& input_tensor_l = context->input(0);
     const Tensor& input_tensor_grad = context->input(1);
     // Check that input tensors represent a matrix.
-    OP_REQUIRES(context, TensorShapeUtils::IsMatrix(input_tensor_l.shape()), errors::InvalidArgument("In[0] is not a matrix"));
-    OP_REQUIRES(context, TensorShapeUtils::IsMatrix(input_tensor_grad.shape()), errors::InvalidArgument("In[1] is not a matrix"));
+    OP_REQUIRES(context, TensorShapeUtils::IsMatrix(input_tensor_l.shape()),
+                errors::InvalidArgument("In[0] is not a matrix"));
+    OP_REQUIRES(context, TensorShapeUtils::IsMatrix(input_tensor_grad.shape()),
+                errors::InvalidArgument("In[1] is not a matrix"));
     // Check that input tensors are square.
-    OP_REQUIRES(context, input_tensor_l.dim_size(0) == input_tensor_l.dim_size(1), errors::InvalidArgument("Input matrix must be square."));
-    OP_REQUIRES(context, input_tensor_grad.dim_size(0) == input_tensor_grad.dim_size(1), errors::InvalidArgument("Input matrix must be square."));
+    OP_REQUIRES(context,
+                input_tensor_l.dim_size(0) == input_tensor_l.dim_size(1),
+                errors::InvalidArgument("Input matrix must be square."));
+    OP_REQUIRES(context,
+                input_tensor_grad.dim_size(0) == input_tensor_grad.dim_size(1),
+                errors::InvalidArgument("Input matrix must be square."));
 
     // Check that input tensors are of same size.
-    OP_REQUIRES(context, input_tensor_l.dim_size(0) == input_tensor_grad.dim_size(0), errors::InvalidArgument("Input matrices must be of same size."));
+    OP_REQUIRES(context,
+                input_tensor_l.dim_size(0) == input_tensor_grad.dim_size(0),
+                errors::InvalidArgument("Input matrices must be same size."));
 
     // Create an output tensor
     Tensor* output_tensor = NULL;
-    OP_REQUIRES_OK(context, context->allocate_output(0, input_tensor_grad.shape(), &output_tensor));
+    OP_REQUIRES_OK(context,
+                   context->allocate_output(0, input_tensor_grad.shape(),
+                   &output_tensor));
 
     if (output_tensor->NumElements() == 0) {
       // the output shape is a 0-element matrix, so there is nothing to do.
       return;
     }
     // The next three lines are necessary to get Eigen matrix behaviour.
-    const ConstMatrixMap input_matrix_l(input_tensor_l.flat<T>().data(), input_tensor_l.dim_size(0), input_tensor_l.dim_size(1));
-    const ConstMatrixMap input_matrix_grad(input_tensor_grad.flat<T>().data(), input_tensor_grad.dim_size(0), input_tensor_grad.dim_size(1));
-    MatrixMap output_matrix(output_tensor->template flat<T>().data(), input_tensor_l.dim_size(0), input_tensor_l.dim_size(1) );
+    const ConstMatrixMap input_matrix_l(input_tensor_l.flat<T>().data(),
+                                        input_tensor_l.dim_size(0),
+                                        input_tensor_l.dim_size(1));
+    const ConstMatrixMap input_matrix_grad(input_tensor_grad.flat<T>().data(),
+                                           input_tensor_grad.dim_size(0),
+                                           input_tensor_grad.dim_size(1));
+    MatrixMap output_matrix(output_tensor->template flat<T>().data(),
+                            input_tensor_l.dim_size(0),
+                            input_tensor_l.dim_size(1) );
 
     const int64 kMatrixSize = input_matrix_l.rows();
     const int64 kMaxBlockSize = 32;
 
     output_matrix = input_matrix_grad.template triangularView<Eigen::Lower>();
-    for ( int64 block_end = kMatrixSize ; block_end > 0ll; block_end-= kMaxBlockSize ) {
+    for ( int64 block_end = kMatrixSize ; block_end > 0; block_end-= kMaxBlockSize ) {
       const int64 block_begin = std::max(0ll, block_end - kMaxBlockSize);
       const int64 block_size = block_end - block_begin;
       const int64 trailing_size = kMatrixSize - block_size;
