@@ -92,7 +92,7 @@ class CholeskyGrad : public OpKernel {
                block_end -= kMaxBlockSize) {
       const int64 block_begin = std::max(0ll, block_end - kMaxBlockSize);
       const int64 block_size = block_end - block_begin;
-      const int64 trailing_size = kMatrixSize - block_size;
+      const int64 trailing_size = kMatrixSize - block_end;
       output_matrix.block(block_end, block_begin, trailing_size , block_size)
                    = input_matrix_l
                    .block(block_begin, block_begin, block_size, block_size)
