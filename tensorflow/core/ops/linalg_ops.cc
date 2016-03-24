@@ -125,6 +125,8 @@ REGISTER_OP("CholeskyGrad")
     .Doc(R"doc(
 Calculates the reverse mode backpropagated gradient of the Cholesky algorithm.
 
+For an explanation see "Differentiation of the Cholesky algorithm" by Iain Murray http://arxiv.org/abs/1602.07527.
+
 l: Output of Cholesky algorithm l = chol(A). Shape is `[M, M]`. Algorithm depends only on lower triangular part of this matrix.
 grad: df/dl where f is some scalar function. Shape is `[M, M]'. Algorithm depends only on lower triangular part of this matrix.
 output: Symmetrized version of df/dA . Shape is `[M, M]'
