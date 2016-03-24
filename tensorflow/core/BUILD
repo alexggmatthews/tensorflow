@@ -240,6 +240,7 @@ tf_cuda_library(
         "framework/reader_op_kernel.h",
         "framework/register_types.h",
         "framework/resource_mgr.h",
+        "framework/selective_registration.h",
         "framework/tensor.h",
         "framework/tensor_shape.h",
         "framework/tensor_slice.h",
@@ -251,6 +252,7 @@ tf_cuda_library(
         "framework/types.h",
         "public/version.h",
         "util/bcast.h",
+        "util/checkpoint_reader.h",
         "util/cuda_kernel_helper.h",
         "util/device_name_utils.h",
         "util/events_writer.h",
@@ -839,6 +841,7 @@ filegroup(
         "framework/op_kernel.h",
         "framework/partial_tensor_shape.h",
         "framework/rendezvous.h",
+        "framework/selective_registration.h",
         "framework/tensor.h",
         "framework/tensor_reference.h",
         "framework/tensor_shape.h",
@@ -1054,12 +1057,16 @@ cc_library(
 
 # Low level library tests
 tf_cc_tests(
+    size = "small",
     tests = glob(
         [
             "lib/**/*_test.cc",
             "platform/**/*_test.cc",
         ],
-        exclude = ["lib/strings/ordered_code_test.cc"],
+        exclude = [
+            "lib/strings/ordered_code_test.cc",
+            "lib/random/weighted_picker_test.cc",
+        ],
     ),
     deps = [
         ":lib",
@@ -1095,8 +1102,23 @@ cc_test(
     ],
 )
 
+cc_test(
+    name = "lib_random_weighted_picker_test",
+    size = "medium",
+    srcs = ["lib/random/weighted_picker_test.cc"],
+    deps = [
+        ":lib",
+        ":lib_internal",
+        ":lib_test_internal",
+        ":protos_all_cc",
+        ":test",
+        ":test_main",
+    ],
+)
+
 # higher level tests
 tf_cc_tests(
+    size = "small",
     linkstatic = tf_kernel_tests_linkstatic(),
     tests = glob(
         [
@@ -1139,6 +1161,7 @@ tf_cc_tests(
 
 # GPU-related tests
 tf_cc_tests(
+    size = "small",
     linkstatic = tf_kernel_tests_linkstatic(),
     tags = tf_cuda_tests_tags(),
     tests = glob(
@@ -1171,6 +1194,7 @@ tf_cc_tests(
 )
 
 tf_cc_tests(
+    size = "medium",
     linkstatic = tf_kernel_tests_linkstatic(),
     tags = tf_cuda_tests_tags() + ["nomac"],
     tests = ["common_runtime/gpu/gpu_allocator_retry_test.cc"],
