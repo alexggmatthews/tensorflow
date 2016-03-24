@@ -22,6 +22,7 @@ import numpy as np
 from six.moves import xrange  # pylint: disable=redefined-builtin
 import tensorflow as tf
 
+from IPython import embed
 
 class CholeskyOpTest(tf.test.TestCase):
 
@@ -86,6 +87,26 @@ class CholeskyOpTest(tf.test.TestCase):
   def testEmpty(self):
     self._verifyCholesky(np.empty([0, 2, 2]))
     self._verifyCholesky(np.empty([2, 0, 0]))
+
+class CholeskyGradTest(tf.test.TestCase):
+
+  def testCholeskyGrad(self):
+    np.random.seed(0)
+    backprop_block_size = 32    
+    shapes = ( (elem, 2*elem) for elem in [1,2,10,backprop_block_size+1,2*backprop_block_size+1] )
+    dtypes = (tf.float32, tf.float64)
+    with self.test_session(use_gpu=False):
+      for shape in shapes:             
+        for dtype in dtypes:
+          x = tf.constant( np.random.rand(shape[0]) )
+          R = tf.constant( np.random.randn(shape[0],shape[1])  )
+          e = tf.matmul( tf.diag( x ), R )
+          K = tf.matmul( e, tf.transpose(e) ) / shape[0] #This gives a positive definite matrix.
+          y = tf.cholesky( K )
+          error = tf.test.compute_gradient_error(x, x._shape_as_list(),
+                                                 y, y._shape_as_list())
+          tf.logging.info("error = %f", error)
+          self.assertLess(error, 1e-5)
 
 
 if __name__ == "__main__":
