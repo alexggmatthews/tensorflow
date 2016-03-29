@@ -22,7 +22,6 @@ import numpy as np
 from six.moves import xrange  # pylint: disable=redefined-builtin
 import tensorflow as tf
 
-from IPython import embed
 
 class CholeskyOpTest(tf.test.TestCase):
 
