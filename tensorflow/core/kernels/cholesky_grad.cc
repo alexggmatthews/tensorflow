@@ -87,6 +87,16 @@ template <typename T> class CholeskyGrad : public OpKernel {
 
     for (int64 block_end = kMatrixSize; block_end > 0;
          block_end -= kMaxBlockSize) {
+      /* This shows the block structure.
+      
+      /      \
+      |      |
+      | R D  |
+      \ B C  /
+      
+      `bar' denotes a block of the derivative matrix.
+      */
+
       const int64 block_begin = std::max(0ll, block_end - kMaxBlockSize);
       const int64 block_size = block_end - block_begin;
       const int64 trailing_size = kMatrixSize - block_end;
@@ -121,19 +131,30 @@ template <typename T> class CholeskyGrad : public OpKernel {
   void CholeskyGradUnblocked(const ConstRef l_block, Ref grad_block) {
     const int64 kMatrixSize = l_block.rows();
     for (int64 k = kMatrixSize - 1; k >= 0; k--) {
+      /* This shows the block structure.
+     
+      /      \
+      |      |
+      | r d  |
+      \ B c  /
+     
+     `bar' denotes a block of the derivative matrix.
+      */
       auto r = l_block.block(k, 0, 1, k);
       auto r_bar = grad_block.block(k, 0, 1, k);
       auto d = l_block(k, k);  // This needs to be a scalar rather than a view.
       auto d_bar = grad_block.block(k, k, 1, 1);
+      // B is not included explicitly because it is not used on its own.
       auto B_bar = grad_block.block(k + 1, 0, kMatrixSize - (k + 1), k);
       auto c = l_block.block(k + 1, k, kMatrixSize - (k + 1), 1);
       auto c_bar = grad_block.block(k + 1, k, kMatrixSize - (k + 1), 1);
-
-      auto d_vstack_c_bar = grad_block.block(k, k, kMatrixSize - k, 1);
-      auto r_vstack_B = l_block.block(k, 0, kMatrixSize - k, k);
+      // Result of vertical stacking d_bar and c_bar.
+      auto d_stack_c_bar = grad_block.block(k, k, kMatrixSize - k, 1);
+      // Result of vertical stacking of r and B.
+      auto r_stack_B = l_block.block(k, 0, kMatrixSize - k, k);
       d_bar -= (c.adjoint() * c_bar) / d;
-      d_vstack_c_bar /= d;
-      r_bar -= d_vstack_c_bar.adjoint() * r_vstack_B;
+      d_stack_c_bar /= d;
+      r_bar -= d_stack_c_bar.adjoint() * r_stack_B;
       B_bar -= c_bar * r;
       d_bar /= 2.;
     }
