@@ -59,7 +59,7 @@ class CholeskyOpTest(tf.test.TestCase):
     odd_sized_array = np.array([[[4., -1., 2.], [-1., 6., 0], [2., 0., 5.]]])
     self._verifyCholesky(np.vstack((odd_sized_array, odd_sized_array)))
 
-    # Generate random positive-definite matrices.
+    #  Generate random positive-definite matrices.
     matrices = np.random.rand(10, 5, 5)
     for i in xrange(10):
       matrices[i] = np.dot(matrices[i].T, matrices[i])
@@ -102,8 +102,7 @@ class CholeskyGradTest(tf.test.TestCase):
   def testOneBlockMatrices(self):
     np.random.seed(0)
     shapes = self.getShapes([self._backprop_block_size + 1])
-    self.runFiniteDifferences(shapes,
-                              dtypes=(tf.float32, tf.float64),
+    self.runFiniteDifferences(shapes, dtypes=(tf.float32, tf.float64),
                               scalarTest=True)
 
   def testTwoBlockMatrixFloat(self):
@@ -116,8 +115,7 @@ class CholeskyGradTest(tf.test.TestCase):
     shapes = self.getShapes([2 * self._backprop_block_size + 1])
     self.runFiniteDifferences(shapes, dtypes=(tf.float64,), scalarTest=True)
 
-  def runFiniteDifferences(self, shapes,
-                           dtypes=(tf.float32, tf.float64),
+  def runFiniteDifferences(self, shapes, dtypes=(tf.float32, tf.float64),
                            scalarTest=False):
     with self.test_session(use_gpu=False):
       for shape in shapes:
