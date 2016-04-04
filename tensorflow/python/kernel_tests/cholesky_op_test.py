@@ -75,11 +75,11 @@ class CholeskyOpTest(tf.test.TestCase):
       tf.cholesky(tensor3)
 
   def testNotInvertible(self):
-    # The input should be invertible.
+     # The input should be invertible.
     with self.test_session():
-      with self.assertRaisesOpError("LLT decomposition was not successful. The "
-                                    "input might not be valid."):
-        # All rows of the matrix below add to zero
+      with self.assertRaisesOpError("LLT decomposition was not successful. The"
+                                    " input might not be valid."):
+         # All rows of the matrix below add to zero
         self._verifyCholesky(np.array([[1., -1., 0.], [-1., 1., -1.], [0., -1.,
                                                                        1.]]))
 
@@ -87,26 +87,57 @@ class CholeskyOpTest(tf.test.TestCase):
     self._verifyCholesky(np.empty([0, 2, 2]))
     self._verifyCholesky(np.empty([2, 0, 0]))
 
-class CholeskyGradTest(tf.test.TestCase):
 
-  def testCholeskyGrad(self):
+class CholeskyGradTest(tf.test.TestCase):
+  _backprop_block_size = 32
+
+  def getShapes(self, shapeList):
+    return ((elem, int(np.floor(1.2 * elem))) for elem in shapeList)
+
+  def testSmallMatrices(self):
     np.random.seed(0)
-    backprop_block_size = 32    
-    shapes = ( (elem, 2*elem) for elem in [1,2,10,backprop_block_size+1,2*backprop_block_size+1] )
-    dtypes = (tf.float32, tf.float64)
+    shapes = self.getShapes([1, 2, 10])
+    self.runFiniteDifferences(shapes)
+
+  def testOneBlockMatrices(self):
+    np.random.seed(0)
+    shapes = self.getShapes([self._backprop_block_size + 1])
+    self.runFiniteDifferences(shapes,
+                              dtypes=(tf.float32, tf.float64),
+                              scalarTest=True)
+
+  def testTwoBlockMatrixFloat(self):
+    np.random.seed(0)
+    shapes = self.getShapes([2 * self._backprop_block_size + 1])
+    self.runFiniteDifferences(shapes, dtypes=(tf.float32,), scalarTest=True)
+
+  def testTwoBlockMatrixDouble(self):
+    np.random.seed(0)
+    shapes = self.getShapes([2 * self._backprop_block_size + 1])
+    self.runFiniteDifferences(shapes, dtypes=(tf.float64,), scalarTest=True)
+
+  def runFiniteDifferences(self, shapes,
+                           dtypes=(tf.float32, tf.float64),
+                           scalarTest=False):
     with self.test_session(use_gpu=False):
-      for shape in shapes:             
+      for shape in shapes:
         for dtype in dtypes:
-          x = tf.constant( np.random.rand(shape[0]) )
-          R = tf.constant( np.random.randn(shape[0],shape[1])  )
-          e = tf.matmul( tf.diag( x ), R )
-          K = tf.matmul( e, tf.transpose(e) ) / shape[0] #This gives a positive definite matrix.
-          y = tf.cholesky( K )
+          if not(scalarTest):
+            x = tf.constant(np.random.randn(shape[0], shape[1]), dtype)
+            K = tf.matmul(x, tf.transpose(x)) / shape[0]  # K is posdef
+          else:  # This is designed to be a faster test for larger matrices.
+            x = tf.constant(np.random.randn(), dtype)
+            R = tf.constant(np.random.randn(shape[0], shape[1]), dtype)
+            e = tf.mul(R, x)
+            K = tf.matmul(e, tf.transpose(e)) / shape[0]  # K is posdef
+          y = tf.cholesky(K)
           error = tf.test.compute_gradient_error(x, x._shape_as_list(),
                                                  y, y._shape_as_list())
           tf.logging.info("error = %f", error)
-          self.assertLess(error, 1e-5)
-
+          if dtype == tf.float64:
+            self.assertLess(error, 1e-5)
+          else:
+            self.assertLess(error, 1e-3)
 
 if __name__ == "__main__":
   tf.test.main()
