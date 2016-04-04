@@ -121,27 +121,21 @@ template <typename T> class CholeskyGrad : public OpKernel {
   void CholeskyGradUnblocked(const ConstRef l_block, Ref grad_block) {
     const int64 kMatrixSize = l_block.rows();
     for (int64 k = kMatrixSize - 1; k >= 0; k--) {
-    
-    auto r = l_block.block(k, 0, 1, k );
-    auto r_bar = grad_block.block(k, 0, 1, k );
-    
-    auto d = l_block(k,k); //This needs to be a scalar rather than a view.
-    auto d_bar = grad_block.block(k, k, 1, 1);
-    
-    auto B_bar = grad_block.block(k+1, 0, kMatrixSize-(k+1), k);
-    
-    auto c = l_block.block(k+1, k, kMatrixSize-(k+1), 1); 
-    auto c_bar = grad_block.block(k+1, k, kMatrixSize-(k+1), 1); 
+      auto r = l_block.block(k, 0, 1, k);
+      auto r_bar = grad_block.block(k, 0, 1, k);
+      auto d = l_block(k, k);  // This needs to be a scalar rather than a view.
+      auto d_bar = grad_block.block(k, k, 1, 1);
+      auto B_bar = grad_block.block(k + 1, 0, kMatrixSize - (k + 1), k);
+      auto c = l_block.block(k + 1, k, kMatrixSize - (k + 1), 1);
+      auto c_bar = grad_block.block(k + 1, k, kMatrixSize - (k + 1), 1);
 
-    auto d_vstack_c_bar = grad_block.block(k,k, kMatrixSize - k, 1);
-    auto r_vstack_B = l_block.block(k,0,kMatrixSize - k, k );
-    
-    d_bar -= (c.adjoint() * c_bar) / d;
-    d_vstack_c_bar /= d;
-    r_bar -= d_vstack_c_bar.adjoint() * r_vstack_B;
-    B_bar -= c_bar * r;
-    d_bar /= 2.;
-      
+      auto d_vstack_c_bar = grad_block.block(k, k, kMatrixSize - k, 1);
+      auto r_vstack_B = l_block.block(k, 0, kMatrixSize - k, k);
+      d_bar -= (c.adjoint() * c_bar) / d;
+      d_vstack_c_bar /= d;
+      r_bar -= d_vstack_c_bar.adjoint() * r_vstack_B;
+      B_bar -= c_bar * r;
+      d_bar /= 2.;
     }
   }
 };
