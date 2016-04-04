@@ -140,18 +140,22 @@ template <typename T> class CholeskyGrad : public OpKernel {
      
      `bar' denotes a block of the derivative matrix.
       */
+
+      const int64 number_rows_B = kMatrixSize - (k + 1);
+      const int64 number_rows_r_stack_B = number_rows_B + 1;
+
       auto r = l_block.block(k, 0, 1, k);
       auto r_bar = grad_block.block(k, 0, 1, k);
       auto d = l_block(k, k);  // This needs to be a scalar rather than a view.
       auto d_bar = grad_block.block(k, k, 1, 1);
       // B is not included explicitly because it is not used on its own.
-      auto B_bar = grad_block.block(k + 1, 0, kMatrixSize - (k + 1), k);
-      auto c = l_block.block(k + 1, k, kMatrixSize - (k + 1), 1);
-      auto c_bar = grad_block.block(k + 1, k, kMatrixSize - (k + 1), 1);
+      auto B_bar = grad_block.block(k + 1, 0, number_rows_B, k);
+      auto c = l_block.block(k + 1, k, number_rows_B, 1);
+      auto c_bar = grad_block.block(k + 1, k, number_rows_B, 1);
       // Result of vertical stacking d_bar and c_bar.
-      auto d_stack_c_bar = grad_block.block(k, k, kMatrixSize - k, 1);
+      auto d_stack_c_bar = grad_block.block(k, k, number_rows_r_stack_B, 1);
       // Result of vertical stacking of r and B.
-      auto r_stack_B = l_block.block(k, 0, kMatrixSize - k, k);
+      auto r_stack_B = l_block.block(k, 0, number_rows_r_stack_B, k);
       d_bar -= (c.adjoint() * c_bar) / d;
       d_stack_c_bar /= d;
       r_bar -= d_stack_c_bar.adjoint() * r_stack_B;
